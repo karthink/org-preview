@@ -2,7 +2,8 @@
 
 Load, run =M-x org-preview-mode=. Use Org as usual. Be amazed.
 
-** Lots to do! [0/13]
+** Lots to do! [1/14]
++ [X] Consistent equation numbering in the previews
 + [ ] Basic color matching (Match default foreground/background of the theme)
 + [ ] Async support for =dvisvgm=.  (Only supports =dvipng= right now.)
 + [ ] Code organization, refactor into task-specific functions?
