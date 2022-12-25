@@ -2,8 +2,8 @@
 
 Load, run =M-x org-preview-mode=. Use Org as usual. Be amazed.
 
-** Lots to do! [1/14]
-+ [X] Consistent equation numbering in the previews
+** Lots to do! [1/15]
++ [X] Basic equation numbering in previews
 + [ ] Basic color matching (Match default foreground/background of the theme)
 + [ ] Async support for =dvisvgm=.  (Only supports =dvipng= right now.)
 + [ ] Code organization, refactor into task-specific functions?
@@ -16,4 +16,5 @@ Load, run =M-x org-preview-mode=. Use Org as usual. Be amazed.
 + [ ] Formula ↔ Text baseline alignment (for png, svg)
 + [ ] Automatic preview toggle on cursor movement
 + [ ] Split preview code from =org.el= (Modularize Org)
++ [ ] [Advanced] Consistent equation numbering by section in previews. 
 + [ ] Fix Org's code verbosity with macros from Emacs 26+ (=when-let=, =pcase-let=, etc)
