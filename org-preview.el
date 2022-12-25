@@ -194,9 +194,7 @@ Some of the options can be changed using the variable
 		        	            (if block-type 'paragraph 'character)))))
                             finally do (goto-char loc))))
                (unless (process-live-p proc)
-                 ;; (mapc #'delete-file (file-expand-wildcards (concat texfilebase "*") 'full))
-                 nil
-                 ))))))
+                 (mapc #'delete-file (file-expand-wildcards (concat texfilebase "*") 'full))))))))
        (t
 	(error "Unknown conversion process %s for LaTeX fragments"
 	       processing-type))))))
@@ -271,7 +269,7 @@ Some of the options can be changed using the variable
 
     (let* (;; (latex-compiler
            ;;  (car '("latex -interaction nonstopmode -output-directory %o")))
-           ;; (image-converter (car '("dvipng --follow -D %D -T tight -o %B-%%09d.png %O")))
+           ;; (image-converter (car '("dvipng --follow -bg %g -fg %c -D %D -T tight -o %B-%%09d.png %O")))
            ;; (image-converter (car '("dvisvgm --page=1- -n -b min -c %S -o %B-%%9p.svg %O")))
            (tex-process)
            (image-process)
@@ -286,7 +284,8 @@ Some of the options can be changed using the variable
 		   (?o . ,(shell-quote-argument out-dir))
 		   (?O . ,(shell-quote-argument (expand-file-name
                                                  (concat base-name "." image-input-type) out-dir)))
-                   )))
+                   (?c . ,(shell-quote-argument (concat "rgb " (replace-regexp-in-string "," " " fg))))
+                   (?g . ,(shell-quote-argument (concat "rgb " (replace-regexp-in-string "," " " bg)))))))
       (setq tex-process
             (make-process :name (format "Org-Preview-%s" (file-name-base texfile))
                           :buffer log-buf
@@ -295,9 +294,7 @@ Some of the options can be changed using the variable
                                       (unless (process-live-p proc)
                                         (dolist (e (cl-remove (concat "." image-input-type) post-clean))
                                           (when (file-exists-p (concat texfilebase e))
-                                            ;; (delete-file (concat texfilebase e))
-                                            nil
-                                            ))))))
+                                            (delete-file (concat texfilebase e))))))))
       (process-send-string tex-process
                            (format-spec
                             "\\PassOptionsToPackage{noconfig,active,tightpage,auctex}{preview}\\AtBeginDocument{\\ifx\\ifPreview\\undefined\\RequirePackage[displaymath,floats,graphics,textmath,sections,footnotes]{preview}[2004/11/05]\\fi}\\input\\detokenize{%f}\n"
@@ -358,11 +355,11 @@ Some of the options can be changed using the variable
            dvipng-proc
            (plist-put dvipng-proc
                       :image-converter
-                      '("dvipng --follow -D %D -T tight -o %B-%%09d.png %O"))
+                      '("dvipng --follow -bg %g -fg %c -D %D -T tight -o %B-%%09d.png %O"))
            dvipng-proc
            (plist-put dvipng-proc
                       :transparent-image-converter
-                      '("dvipng --follow -D %D -T tight -bg Transparent -o %B-%%09d.png %O")))
+                      '("dvipng --follow -D %D -T tight -bg Transparent -fg %c -o %B-%%09d.png %O")))
           ;; (map-put! org-preview-latex-process-alist 'dvipng dvipng-proc)
           )
         (let ((dvisvgm-proc (alist-get 'dvisvgm org-preview-latex-process-alist)))
