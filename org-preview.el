@@ -26,6 +26,8 @@
 
 (require 'org)
 
+(defvar org-preview--debug-msg t)
+
 (defun org-preview-format-latex
     (prefix &optional beg end dir overlays msg forbuffer processing-type)
   "Replace LaTeX fragments with links to an image.
@@ -122,6 +124,8 @@ Some of the options can be changed using the variable
         (let* ((processing-info
                 (cdr (assq processing-type org-preview-latex-process-alist)))
                (face (face-at-point))
+               (time-start)
+               (num-overlays)
                (fg
 		(let ((color (plist-get org-format-latex-options
 					:foreground)))
@@ -185,6 +189,11 @@ Some of the options can be changed using the variable
                       (push (cons block-beg block-end) math-locations)
                       (push hash math-hashes)))))))
 
+          (when org-preview--debug-msg
+            (setq num-overlays (length math-locations))
+            (message "Creating %d previews in buffer..." num-overlays)
+            (setq time-start (current-time)))
+          
           (pcase-let ((`(,texfilebase ,tex-process ,image-process)
                        (org-preview-create-formula-image
                         (mapconcat #'identity (nreverse math-text) "\n\n")
@@ -219,7 +228,10 @@ Some of the options can be changed using the variable
 		        	            (if block-type 'paragraph 'character)))))
                             finally do (goto-char loc))))
                (unless (process-live-p proc)
-                 (mapc #'delete-file (file-expand-wildcards (concat texfilebase "*") 'full))))))))
+                 (mapc #'delete-file (file-expand-wildcards (concat texfilebase "*") 'full)))
+               (when org-preview--debug-msg
+                 (message "Creating %d previews in buffer... Done. [%.4f seconds]"
+                          num-overlays (time-to-seconds (time-since time-start)))))))))
        (t
 	(error "Unknown conversion process %s for LaTeX fragments"
 	       processing-type))))))
