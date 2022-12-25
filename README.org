@@ -2,10 +2,10 @@
 
 Load, run =M-x org-preview-mode=. Use Org as usual. Be amazed.
 
-** Lots to do! [1/15]
+** Lots to do! [2/16]
 + [X] Basic equation numbering in previews
 + [ ] Basic color matching (Match default foreground/background of the theme)
-+ [ ] Async support for =dvisvgm=.  (Only supports =dvipng= right now.)
++ [X] Async support for =dvisvgm=.  (Only supports =dvipng= right now.)
 + [ ] Code organization, refactor into task-specific functions?
 + [ ] Add back image caching.  (Disabled by design right now.)
 + [ ] Async method (process sentinels vs =org-async= vs custom macro)
@@ -14,6 +14,7 @@ Load, run =M-x org-preview-mode=. Use Org as usual. Be amazed.
 + [ ] Scale matching
 + [ ] Advanced color matching (Match colors at point)
 + [ ] Formula ↔ Text baseline alignment (for png, svg)
++ [ ] Preamble precompilation
 + [ ] Automatic preview toggle on cursor movement
 + [ ] Split preview code from =org.el= (Modularize Org)
 + [ ] [Advanced] Consistent equation numbering by section in previews. 

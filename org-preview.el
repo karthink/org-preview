@@ -91,6 +91,8 @@ Some of the options can be changed using the variable
 		  (delete-region beg end)
 		  (insert (org-format-latex-as-mathml
 			   value block-type prefix dir))))))))
+       ((eq processing-type 'imagemagick)
+        (user-error "Imagemagick based previews are currently not supported.\nPlease customize `org-preview-latex-default-process'."))
        ((assq processing-type org-preview-latex-process-alist)
         (let* ((processing-info
                 (cdr (assq processing-type org-preview-latex-process-alist)))
@@ -192,7 +194,9 @@ Some of the options can be changed using the variable
 		        	            (if block-type 'paragraph 'character)))))
                             finally do (goto-char loc))))
                (unless (process-live-p proc)
-                 (mapc #'delete-file (file-expand-wildcards (concat texfilebase "*") 'full))))))))
+                 ;; (mapc #'delete-file (file-expand-wildcards (concat texfilebase "*") 'full))
+                 nil
+                 ))))))
        (t
 	(error "Unknown conversion process %s for LaTeX fragments"
 	       processing-type))))))
@@ -265,12 +269,12 @@ Some of the options can be changed using the variable
 	      "\n}\n"
 	      "\n\\end{document}\n"))
 
-    (let* ((latex-compiler
-            (car '("latex -interaction nonstopmode -output-directory %o")))
-           ;; (image-converter (car '("dvipng --follow -D %D -T tight %O")))
-           (image-converter (car '("dvipng --follow -D %D -T tight -o %B-%%09d.png %O")))
+    (let* (;; (latex-compiler
+           ;;  (car '("latex -interaction nonstopmode -output-directory %o")))
+           ;; (image-converter (car '("dvipng --follow -D %D -T tight -o %B-%%09d.png %O")))
+           ;; (image-converter (car '("dvisvgm --page=1- -n -b min -c %S -o %B-%%9p.svg %O")))
            (tex-process)
-           (conversion-process)
+           (image-process)
            (base-name (file-name-base texfile))
            (out-dir (or (file-name-directory texfile) "./"))
            (spec `((?D . ,(shell-quote-argument (format "%s" dpi)))
@@ -286,36 +290,117 @@ Some of the options can be changed using the variable
       (setq tex-process
             (make-process :name (format "Org-Preview-%s" (file-name-base texfile))
                           :buffer log-buf
-                          :command (split-string-shell-command (format-spec latex-compiler spec))
+                          :command (split-string-shell-command (format-spec (car latex-compiler) spec))
                           :sentinel (lambda (proc signal)
                                       (unless (process-live-p proc)
                                         (dolist (e (cl-remove (concat "." image-input-type) post-clean))
                                           (when (file-exists-p (concat texfilebase e))
-                                            (delete-file (concat texfilebase e))))))))
+                                            ;; (delete-file (concat texfilebase e))
+                                            nil
+                                            ))))))
       (process-send-string tex-process
                            (format-spec
-                            "\\PassOptionsToPackage{active,tightpage,auctex}{preview}\\AtBeginDocument{\\ifx\\ifPreview\\undefined\\RequirePackage[displaymath,floats,graphics,textmath,sections,footnotes]{preview}[2004/11/05]\\fi}\\input\\detokenize{%f}\n" spec))
+                            "\\PassOptionsToPackage{noconfig,active,tightpage,auctex}{preview}\\AtBeginDocument{\\ifx\\ifPreview\\undefined\\RequirePackage[displaymath,floats,graphics,textmath,sections,footnotes]{preview}[2004/11/05]\\fi}\\input\\detokenize{%f}\n"
+                            spec))
+      (when (equal processing-type 'dvisvgm)
+        (while (process-live-p tex-process)
+          (accept-process-output tex-process)))
       (setq image-process
             (make-process :name (format "Org-Convert-%s-%s"
                                         (file-name-base texfile)
                                         (symbol-name processing-type))
-                          :buffer (format "Org-Convert-%s-%s.out"
+                          :buffer (format "*Org Convert %s %s*"
                                           (file-name-base texfile)
                                           (symbol-name processing-type))
-                          :command (split-string-shell-command (format-spec image-converter spec))))
+                          :command (split-string-shell-command (format-spec (car image-converter) spec))))
       (list texfilebase tex-process image-process))))
 
 
-;; "pdflatex  -file-line-error   --synctex=1 \"\\nonstopmode\\nofiles\\PassOptionsToPackage{active,tightpage,auctex}{preview}\\AtBeginDocument{\\ifx\\ifPreview\\undefined\\RequirePackage[displaymath,floats,graphics,textmath,sections,footnotes]{preview}[2004/11/05]\\fi}\" \"\\input\" \"\\detokenize{\" _region_.tex \"}\""
+
+;; Ignore the rest of this file. It's some glue to turn this feature into a
+;; minor-mode without messing up the User's state.
+
+(require 'map)
+(defvar org-preview--dvipng-latex-compiler nil)
+(defvar org-preview--dvipng-image-converter nil)
+(defvar org-preview--dvipng-transparent-image-compiler nil)
+(defvar org-preview--dvisvgm-latex-compiler nil)
+(defvar org-preview--dvisvgm-image-converter nil)
+
+(defsubst org-preview--get (&rest keys)
+  (map-nested-elt org-preview-latex-process-alist keys))
 
 (define-minor-mode org-preview-mode
   "Asynchronous and batched (much, much faster) LaTeX previews for Org-mode."
-  :global nil
+  :global t
   :version "0.10"
-  :lighter "[preview]"
+  :lighter nil
   :group 'org
   (if org-preview-mode
       ;; Turning the mode on
-      (advice-add 'org-format-latex :override #'org-preview-format-latex)
+      (progn
+        (setq org-preview--dvipng-latex-compiler
+              (org-preview--get 'dvipng :latex-compiler))
+        (setq org-preview--dvipng-image-converter
+              (org-preview--get 'dvipng :image-converter))
+        (setq org-preview--dvipng-transparent-image-compiler
+              (org-preview--get 'dvipng :transparent-image-compiler))
+        (setq org-preview--dvisvgm-latex-compiler
+              (org-preview--get 'dvisvgm :latex-compiler))
+        (setq org-preview--dvisvgm-image-converter
+              (org-preview--get 'dvisvgm :image-converter))
+        (let ((dvipng-proc (alist-get 'dvipng org-preview-latex-process-alist)))
+          (setq
+           dvipng-proc
+           (plist-put dvipng-proc
+                      :latex-compiler
+                      '("latex -interaction nonstopmode -output-directory %o"))
+           dvipng-proc
+           (plist-put dvipng-proc
+                      :image-converter
+                      '("dvipng --follow -D %D -T tight -o %B-%%09d.png %O"))
+           dvipng-proc
+           (plist-put dvipng-proc
+                      :transparent-image-converter
+                      '("dvipng --follow -D %D -T tight -bg Transparent -o %B-%%09d.png %O")))
+          ;; (map-put! org-preview-latex-process-alist 'dvipng dvipng-proc)
+          )
+        (let ((dvisvgm-proc (alist-get 'dvisvgm org-preview-latex-process-alist)))
+          (setq
+           dvisvgm-proc
+           (plist-put dvisvgm-proc
+                      :latex-compiler
+                      '("latex -interaction nonstopmode -output-directory %o"))
+           dvisvgm-proc
+           (plist-put dvisvgm-proc
+                      :image-converter
+                      '("dvisvgm --page=1- -n -b min -c %S -o %B-%%9p.svg %O"))))
+          ;; (map-put! org-preview-latex-process-alist 'dvisvgm dvisvgm-proc)
+          
+          (advice-add 'org-format-latex :override #'org-preview-format-latex))
     ;; Turning the mode off
+    
+    (let ((dvipng-proc (alist-get 'dvipng org-preview-latex-process-alist)))
+          (setq
+           dvipng-proc
+           (plist-put dvipng-proc :latex-compiler
+                      org-preview--dvipng-latex-compiler)
+           dvipng-proc
+           (plist-put dvipng-proc :image-converter
+                      org-preview--dvipng-image-converter)
+           dvipng-proc
+           (plist-put dvipng-proc :transparent-image-converter
+                      org-preview--dvipng-transparent-image-compiler))
+          ;; (map-put! org-preview-latex-process-alist 'dvipng dvipng-proc)
+          )
+    (let ((dvisvgm-proc (alist-get 'dvisvgm org-preview-latex-process-alist)))
+      (setq
+       dvisvgm-proc
+       (plist-put dvisvgm-proc :latex-compiler
+                  org-preview--dvisvgm-latex-compiler)
+       dvisvgm-proc
+       (plist-put dvisvgm-proc :image-converter
+                  org-preview--dvisvgm-image-converter))
+      ;; (map-put! org-preview-latex-process-alist 'dvisvgm dvisvgm-proc)
+      )
     (advice-remove 'org-format-latex #'org-preview-format-latex)))
