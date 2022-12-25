@@ -1,6 +1,10 @@
 #+title: Fast, async, upgraded LaTeX previews for Org-mode
 
+/Note: This library is a work in progress. Expect glitches and breakages!/
+
 Load, run =M-x org-preview-mode=. Use Org as usual. Be amazed.
+
+https://user-images.githubusercontent.com/8607532/209464174-4f606bb6-b4c0-40f9-8dd1-ff54cc1cb3ab.mp4
 
 ** Lots to do! [3/17]
 + [X] Basic equation numbering in previews

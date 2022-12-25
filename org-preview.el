@@ -1,4 +1,29 @@
-;; -*- lexical-binding: t; -*-
+;;; org-preview.el --- Fast, async LaTeX previews for Org  -*- lexical-binding: t; -*-
+
+;; Copyright (C) 2022  Karthik Chikmagalur
+
+;; Author: Karthik Chikmagalur <karthikchikmagalur@gmail.com>
+;; Keywords: tex, extensions, tools
+
+;; This program is free software; you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+;;; Commentary:
+
+;; To use this package, turn on `org-preview-mode'.
+
+;;; Code:
+
 (require 'org)
 
 (defun org-preview-format-latex
@@ -401,3 +426,6 @@ Some of the options can be changed using the variable
       ;; (map-put! org-preview-latex-process-alist 'dvisvgm dvisvgm-proc)
       )
     (advice-remove 'org-format-latex #'org-preview-format-latex)))
+
+(provide 'org-preview)
+;;; org-preview.el ends here
