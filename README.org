@@ -1,0 +1,18 @@
+#+title: Fast, async, upgraded LaTeX previews for Org-mode
+
+Load, run =M-x org-preview-mode=. Use Org as usual. Be amazed.
+
+** Lots to do! [0/13]
++ [ ] Basic color matching (Match default foreground/background of the theme)
++ [ ] Async support for =dvisvgm=.  (Only supports =dvipng= right now.)
++ [ ] Code organization, refactor into task-specific functions?
++ [ ] Add back image caching.  (Disabled by design right now.)
++ [ ] Async method (process sentinels vs =org-async= vs custom macro)
++ [ ] Equation ↔ Image mismatch handling
++ [ ] Overlay placement mismatch handling (async problem)
++ [ ] Scale matching
++ [ ] Advanced color matching (Match colors at point)
++ [ ] Formula ↔ Text baseline alignment (for png, svg)
++ [ ] Automatic preview toggle on cursor movement
++ [ ] Split preview code from =org.el= (Modularize Org)
++ [ ] Fix Org's code verbosity with macros from Emacs 26+ (=when-let=, =pcase-let=, etc)

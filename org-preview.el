@@ -169,7 +169,6 @@ Some of the options can be changed using the variable
                  (let ((images (file-expand-wildcards
                                 (concat texfilebase "*." imagetype)
                                 'full)))
-                   (print images (get-buffer "*scratch*"))
                    (cl-loop with loc = (point)
                             for hash in (nreverse math-hashes)
                             for (block-beg . block-end) in (nreverse math-locations)
