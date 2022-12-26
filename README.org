@@ -6,11 +6,11 @@ Load, run =M-x org-preview-mode=. Use Org as usual. Be amazed.
 
 https://user-images.githubusercontent.com/8607532/209464174-4f606bb6-b4c0-40f9-8dd1-ff54cc1cb3ab.mp4
 
-** Lots to do! [3/17]
+** Lots to do! [3/18]
 + [X] Basic equation numbering in previews
 + [X] Basic color matching (Match default foreground/background of the theme)
 + [X] Async support for =dvisvgm=.  +(Only supports =dvipng= right now.)+
-+ [ ] Code organization, refactor into task-specific functions?
++ [-] Code organization, refactor into task-specific functions?
 + [ ] Add back image caching.  (Disabled by design right now.)
 + [ ] Async method (process sentinels vs =org-async= vs custom macro)
 + [ ] Equation ↔ Image mismatch handling
@@ -23,4 +23,5 @@ https://user-images.githubusercontent.com/8607532/209464174-4f606bb6-b4c0-40f9-8
 + [ ] Async support for =imagemagick=.
 + [ ] Split preview code from =org.el= (Modularize Org)
 + [ ] [Advanced] Consistent equation numbering by section in previews. 
++ [ ] Try one TeX run + multiple image-converter processes (more overhead, but threading!)
 + [ ] Fix Org's code verbosity with macros from Emacs 26+ (=when-let=, =pcase-let=, etc)

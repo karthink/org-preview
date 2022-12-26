@@ -27,6 +27,13 @@
 (require 'org)
 
 (defvar org-preview--debug-msg t)
+(defvar org-preview--log-buf "*Org Preview Log*")
+
+(defsubst org-preview-report (msg start-time)
+  (when org-preview--debug-msg 
+    (with-current-buffer (get-buffer-create org-preview--log-buf)
+      (insert (format "%.4f:    " (time-to-seconds (time-since start-time)))
+              msg "\n"))))
 
 (defun org-preview-format-latex
     (prefix &optional beg end dir overlays msg forbuffer processing-type)
@@ -124,7 +131,7 @@ Some of the options can be changed using the variable
         (let* ((processing-info
                 (cdr (assq processing-type org-preview-latex-process-alist)))
                (face (face-at-point))
-               (time-start)
+               (start-time (current-time))
                (num-overlays)
                (fg
 		(let ((color (plist-get org-format-latex-options
@@ -148,7 +155,8 @@ Some of the options can be changed using the variable
                         (face-attribute 'default :background nil))
                        (t color))
                     color)))
-               (imagetype (or (plist-get processing-info :image-output-type) "png"))
+               (image-output-type (or (plist-get processing-info :image-output-type) "png"))
+               (image-input-type (or (plist-get processing-info :image-input-type) "dvi"))
 	       (absprefix (expand-file-name prefix dir))
                (options
 		(org-combine-plists
@@ -189,27 +197,27 @@ Some of the options can be changed using the variable
                       (push (cons block-beg block-end) math-locations)
                       (push hash math-hashes)))))))
 
-          (when org-preview--debug-msg
-            (setq num-overlays (length math-locations))
-            (message "Creating %d previews in buffer..." num-overlays)
-            (setq time-start (current-time)))
+          (setq num-overlays (length math-locations))
           
           (pcase-let ((`(,texfilebase ,tex-process ,image-process)
                        (org-preview-create-formula-image
                         (mapconcat #'identity (nreverse math-text) "\n\n")
-                        options forbuffer processing-type)))
+                        options forbuffer processing-type start-time)))
             (set-process-sentinel
              image-process
              (lambda (proc signal)
+               (when org-preview--debug-msg
+                 (unless (process-live-p proc)
+                   (org-preview-report "DVI processing" start-time)))
                (when (string= signal "finished\n")
                  (let ((images (file-expand-wildcards
-                                (concat texfilebase "*." imagetype)
+                                (concat texfilebase "*." image-output-type)
                                 'full)))
                    (cl-loop with loc = (point)
                             for hash in (nreverse math-hashes)
                             for (block-beg . block-end) in (nreverse math-locations)
                             for image-file in images
-                            for movefile = (format "%s_%s.%s" absprefix hash imagetype)
+                            for movefile = (format "%s_%s.%s" absprefix hash image-output-type)
                             do (copy-file image-file movefile 'replace)
                             do (if overlays
 		                   (progn
@@ -217,7 +225,7 @@ Some of the options can be changed using the variable
 		                       (when (eq (overlay-get o 'org-overlay-type)
 		        	                 'org-latex-overlay)
 		                         (delete-overlay o)))
-		                     (org--make-preview-overlay block-beg block-end movefile imagetype)
+		                     (org--make-preview-overlay block-beg block-end movefile image-output-type)
 		                     (goto-char block-end))
 		                 (delete-region block-beg block-end)
 		                 (insert
@@ -228,16 +236,19 @@ Some of the options can be changed using the variable
 		        	            (if block-type 'paragraph 'character)))))
                             finally do (goto-char loc))))
                (unless (process-live-p proc)
-                 (mapc #'delete-file (file-expand-wildcards (concat texfilebase "*") 'full)))
+                 (mapc #'delete-file (file-expand-wildcards (concat texfilebase "*." image-output-type) 'full))
+                 (delete-file (concat texfilebase "." image-input-type)))
                (when org-preview--debug-msg
-                 (message "Creating %d previews in buffer... Done. [%.4f seconds]"
-                          num-overlays (time-to-seconds (time-since time-start)))))))))
+                 (org-preview-report "Overlay placement" start-time)
+                 (with-current-buffer org-preview--log-buf
+                   (insert (format "Previews: %d, Process: %S\n\n"
+                                   num-overlays processing-type)))))))))
        (t
 	(error "Unknown conversion process %s for LaTeX fragments"
 	       processing-type))))))
 
 (defun org-preview-create-formula-image
-    (string options buffer &optional processing-type)
+    (string options buffer &optional processing-type start-time)
   
   (let* ((processing-type (or processing-type
                               org-preview-latex-default-process))
@@ -323,15 +334,19 @@ Some of the options can be changed using the variable
                                                  (concat base-name "." image-input-type) out-dir)))
                    (?c . ,(shell-quote-argument (concat "rgb " (replace-regexp-in-string "," " " fg))))
                    (?g . ,(shell-quote-argument (concat "rgb " (replace-regexp-in-string "," " " bg)))))))
+      (when org-preview--debug-msg
+        (org-preview-report "Preprocessing" start-time))
       (setq tex-process
             (make-process :name (format "Org-Preview-%s" (file-name-base texfile))
                           :buffer log-buf
                           :command (split-string-shell-command (format-spec (car latex-compiler) spec))
                           :sentinel (lambda (proc signal)
                                       (unless (process-live-p proc)
-                                        (dolist (e (cl-remove (concat "." image-input-type) post-clean))
+                                        (org-preview-report "Tex process" start-time)
+                                        (dolist (e (delete (concat "." image-input-type) post-clean))
                                           (when (file-exists-p (concat texfilebase e))
-                                            (delete-file (concat texfilebase e))))))))
+                                            (delete-file (concat texfilebase e))))
+                                        (org-preview-report "Tex cleanup" start-time)))))
       (process-send-string tex-process
                            (format-spec
                             "\\PassOptionsToPackage{noconfig,active,tightpage,auctex}{preview}\\AtBeginDocument{\\ifx\\ifPreview\\undefined\\RequirePackage[displaymath,floats,graphics,textmath,sections,footnotes]{preview}[2004/11/05]\\fi}\\input\\detokenize{%f}\n"
