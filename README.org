@@ -1,6 +1,6 @@
 #+title: Fast, async, upgraded LaTeX previews for Org-mode
 
-/Note: This library is a proof of concept and will not be worked on further.  Instead this feature and more will be included in Org mode, likely in version 9.7./
+/Note: This library is a proof of concept and will not be worked on further.  Instead this feature and many more ([[https://www.youtube.com/watch?v=n-AfvuV-bYo][see demo]]) will be included in Org mode, likely in version 9.7./
 
 Load, run =M-x org-preview-mode=. Use Org as usual. Be amazed.
 
