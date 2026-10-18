@@ -1,5 +1,7 @@
 #+title: Fast, async, upgraded LaTeX previews for Org-mode
 
+/Note: This feature has been merged into Org mode and will likely ship with Org 10.0.  Until then, you can use the development branch of Org for fast latex previews./
+
 /Note: This library was a proof of concept and will not be worked on further, it will be archived eventually./
 
 /Instead this feature and many more will be included in Org mode, likely in version +9.7+ 9.8./
